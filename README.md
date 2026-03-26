@@ -13,6 +13,12 @@ As AI agents increasingly process security logs, chat transcripts, and incident 
 
 ---
 
+## Demo
+
+[![asciicast](https://asciinema.org/a/21UCHhIc9SLyTMaH.svg)](https://asciinema.org/a/21UCHhIc9SLyTMaH)
+
+---
+
 ## What This Proves
 
 - **Real PII detection** using presidio + spaCy NER — not regex, not mocks
@@ -99,6 +105,8 @@ An AI agent calling `pii_safe_scan` receives:
 ---
 
 ## Architecture
+
+[![Architecture Diagram](architecture.png)](architecture-diagram.html)
 
 ```
 ┌──────────────────────────────────────────────────┐

@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400, initial-scale=1">
+<title>PII-Safe Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0a0e1a;
+    color: #e2e8f0;
+    width: 1400px;
+    padding: 48px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #34d399, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .header .subtitle {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 400;
+  }
+
+  .header .subtitle a {
+    color: #60a5fa;
+    text-decoration: none;
+  }
+
+  .philosophy {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 36px;
+  }
+
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .pill-green { background: rgba(52, 211, 153, 0.12); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.25); }
+  .pill-blue { background: rgba(96, 165, 250, 0.12); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.25); }
+  .pill-purple { background: rgba(167, 139, 250, 0.12); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.25); }
+  .pill-amber { background: rgba(251, 191, 36, 0.12); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.25); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 320px 1fr 320px;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .card {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .icon-green { background: rgba(52, 211, 153, 0.15); }
+  .icon-blue { background: rgba(96, 165, 250, 0.15); }
+  .icon-purple { background: rgba(167, 139, 250, 0.15); }
+  .icon-amber { background: rgba(251, 191, 36, 0.15); }
+  .icon-red { background: rgba(248, 113, 113, 0.15); }
+  .icon-cyan { background: rgba(34, 211, 238, 0.15); }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+
+  .card-subtitle {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 400;
+  }
+
+  .feature-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .feature-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #1e293b;
+    font-size: 13px;
+    color: #94a3b8;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .feature-list li:last-child { border-bottom: none; }
+
+  .feature-list .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  .dot-green { background: #34d399; }
+  .dot-blue { background: #60a5fa; }
+  .dot-purple { background: #a78bfa; }
+  .dot-amber { background: #fbbf24; }
+  .dot-red { background: #f87171; }
+  .dot-cyan { background: #22d3ee; }
+
+  .center-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .flow-section {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+    padding: 28px;
+  }
+
+  .flow-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .flow-steps {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .flow-step {
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    position: relative;
+  }
+
+  .flow-step-desc {
+    font-size: 11px;
+    font-weight: 400;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+
+  .step-green { background: rgba(52, 211, 153, 0.1); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.2); }
+  .step-blue { background: rgba(96, 165, 250, 0.1); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.2); }
+  .step-purple { background: rgba(167, 139, 250, 0.1); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.2); }
+  .step-amber { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.2); }
+  .step-red { background: rgba(248, 113, 113, 0.1); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.2); }
+
+  .flow-arrow {
+    color: #334155;
+    font-size: 20px;
+    line-height: 1;
+    padding: 4px 0;
+  }
+
+  .interfaces-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .interface-card {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .interface-card .emoji {
+    font-size: 22px;
+    margin-bottom: 6px;
+  }
+
+  .interface-card .name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+  }
+
+  .interface-card .desc {
+    font-size: 11px;
+    color: #64748b;
+  }
+
+  .bottom-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 8px;
+  }
+
+  .policy-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .policy-table th {
+    text-align: left;
+    padding: 8px 12px;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #1e293b;
+  }
+
+  .policy-table td {
+    padding: 8px 12px;
+    color: #94a3b8;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .badge-redact { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+  .badge-pseudo { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+  .badge-allow { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+
+  .mcp-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mcp-tool {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+  }
+
+  .mcp-tool-name {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #a78bfa;
+    white-space: nowrap;
+  }
+
+  .mcp-tool-desc {
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid #1e293b;
+  }
+
+  .footer .stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-bottom: 12px;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #34d399, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+
+  .footer-links {
+    font-size: 12px;
+    color: #475569;
+  }
+
+  .footer-links a {
+    color: #60a5fa;
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>PII-Safe Architecture</h1>
+  <div class="subtitle">Privacy Middleware for AI Agent Workflows — GSoC 2026 C2SI &nbsp;|&nbsp; <a href="https://github.com/vinimlo/pii-safe-poc">github.com/vinimlo/pii-safe-poc</a></div>
+</div>
+
+<div class="philosophy">
+  <div class="pill pill-green"><span>&#x1f512;</span> Library First, Service Second</div>
+  <div class="pill pill-blue"><span>&#x1f916;</span> MCP-Native Integration</div>
+  <div class="pill pill-purple"><span>&#x2699;</span> Policy-Driven Sanitization</div>
+  <div class="pill pill-amber"><span>&#x1f9ea;</span> 24 Tests Passing</div>
+</div>
+
+<div class="grid">
+
+  <!-- LEFT: Input Sources -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon icon-amber">&#x1f4e5;</div>
+        <div>
+          <div class="card-title">Input Sources</div>
+          <div class="card-subtitle">Data entering agent pipelines</div>
+        </div>
+      </div>
+      <ul class="feature-list">
+        <li><span class="dot dot-amber"></span>Free text (chat transcripts, logs, tickets)</li>
+        <li><span class="dot dot-amber"></span>Structured JSON (API responses, database records)</li>
+        <li><span class="dot dot-amber"></span>Agent context (tool outputs, memory writes)</li>
+        <li><span class="dot dot-amber"></span>Batch files (CSV, JSONL)</li>
+      </ul>
+    </div>
+
+    <div class="card" style="margin-top: 24px;">
+      <div class="card-header">
+        <div class="card-icon icon-green">&#x1f6e1;</div>
+        <div>
+          <div class="card-title">Detection Engine</div>
+          <div class="card-subtitle">presidio + spaCy NER</div>
+        </div>
+      </div>
+      <ul class="feature-list">
+        <li><span class="dot dot-green"></span>20+ entity types (EMAIL, PERSON, IP, PHONE, CREDIT_CARD, SSN...)</li>
+        <li><span class="dot dot-green"></span>Overlap resolution (highest confidence wins)</li>
+        <li><span class="dot dot-green"></span>Schema-aware: per-field scanning for JSON</li>
+        <li><span class="dot dot-green"></span>Confidence scores per entity</li>
+        <li><span class="dot dot-green"></span>Custom recognizer extensibility</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- CENTER: Pipeline Flow -->
+  <div class="center-stack">
+    <div class="flow-section">
+      <div class="flow-title">Processing Pipeline</div>
+      <div class="flow-steps">
+        <div class="flow-step step-amber">
+          &#x1f4e5; Input
+          <div class="flow-step-desc">Text or structured JSON enters the pipeline</div>
+        </div>
+        <div class="flow-arrow">&#x25bc;</div>
+        <div class="flow-step step-green">
+          &#x1f50d; Detect
+          <div class="flow-step-desc">presidio + spaCy NER identifies PII entities with confidence scores</div>
+        </div>
+        <div class="flow-arrow">&#x25bc;</div>
+        <div class="flow-step step-blue">
+          &#x1f9f9; Sanitize
+          <div class="flow-step-desc">Policy-driven: redact, pseudonymize, or allowlist per entity type</div>
+        </div>
+        <div class="flow-arrow">&#x25bc;</div>
+        <div class="flow-step step-purple">
+          &#x1f4ca; Score
+          <div class="flow-step-desc">Privacy risk 0.0 (NONE) → 1.0 (CRITICAL) based on density + confidence</div>
+        </div>
+        <div class="flow-arrow">&#x25bc;</div>
+        <div class="flow-step step-red">
+          &#x1f4dd; Audit
+          <div class="flow-step-desc">SQLite log: every action recorded with timestamp and policy reference</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-section">
+      <div class="flow-title">Interfaces — Same Engine, Four Access Patterns</div>
+      <div class="interfaces-grid">
+        <div class="interface-card">
+          <div class="emoji">&#x1f4bb;</div>
+          <div class="name">CLI</div>
+          <div class="desc">scan, detect, score commands with colored output</div>
+        </div>
+        <div class="interface-card">
+          <div class="emoji">&#x1f916;</div>
+          <div class="name">MCP Server</div>
+          <div class="desc">3 tools via stdio transport for AI agents</div>
+        </div>
+        <div class="interface-card">
+          <div class="emoji">&#x1f310;</div>
+          <div class="name">REST API</div>
+          <div class="desc">FastAPI endpoints with OpenAPI docs</div>
+        </div>
+        <div class="interface-card">
+          <div class="emoji">&#x1f40d;</div>
+          <div class="name">Python API</div>
+          <div class="desc">from pii_safe import PIISafeEngine</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Policy + MCP -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon icon-blue">&#x1f4dc;</div>
+        <div>
+          <div class="card-title">Sanitization Policies</div>
+          <div class="card-subtitle">YAML-configurable per entity type</div>
+        </div>
+      </div>
+      <table class="policy-table">
+        <tr><th>Policy</th><th>Behavior</th></tr>
+        <tr>
+          <td><strong>default</strong></td>
+          <td><span class="badge badge-redact">redact</span> all, <span class="badge badge-pseudo">pseudo</span> names</td>
+        </tr>
+        <tr>
+          <td><strong>strict</strong></td>
+          <td><span class="badge badge-redact">redact</span> everything</td>
+        </tr>
+        <tr>
+          <td><strong>permissive</strong></td>
+          <td><span class="badge badge-allow">allow</span> most, <span class="badge badge-redact">redact</span> high-risk</td>
+        </tr>
+        <tr>
+          <td><strong>custom.yaml</strong></td>
+          <td>Team-defined rules</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top: 24px;">
+      <div class="card-header">
+        <div class="card-icon icon-purple">&#x1f916;</div>
+        <div>
+          <div class="card-title">MCP Tools</div>
+          <div class="card-subtitle">Model Context Protocol interface</div>
+        </div>
+      </div>
+      <div class="mcp-tools">
+        <div class="mcp-tool">
+          <div class="mcp-tool-name">pii_safe_scan</div>
+          <div class="mcp-tool-desc">Detect + sanitize + score</div>
+        </div>
+        <div class="mcp-tool">
+          <div class="mcp-tool-name">pii_safe_detect</div>
+          <div class="mcp-tool-desc">Detection only</div>
+        </div>
+        <div class="mcp-tool">
+          <div class="mcp-tool-name">pii_safe_score</div>
+          <div class="mcp-tool-desc">Risk assessment (0.0–1.0)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value">24</div>
+      <div class="stat-label">Tests Passing</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">20+</div>
+      <div class="stat-label">Entity Types</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">3</div>
+      <div class="stat-label">MCP Tools</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">3</div>
+      <div class="stat-label">Built-in Policies</div>
+    </div>
+  </div>
+  <div class="footer-links">
+    PoC: <a href="https://github.com/vinimlo/pii-safe-poc">github.com/vinimlo/pii-safe-poc</a> &nbsp;|&nbsp;
+    GSoC 2026 C2SI PII-Safe &nbsp;|&nbsp;
+    Vinícius Melo Almeida
+  </div>
+</div>
+
+</body>
+</html>

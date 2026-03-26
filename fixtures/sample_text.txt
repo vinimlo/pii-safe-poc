@@ -1,0 +1,11 @@
+Dear John Smith,
+
+Your order #12345 has been shipped to 123 Main Street, Springfield, IL 62704.
+We've charged your card ending in 4532 for $49.99.
+
+If you have questions, contact us at support@acme.com or call +1-555-0123.
+Your account is registered under john.smith@gmail.com.
+
+Best regards,
+ACME Customer Support
+IP logged: 192.168.1.42

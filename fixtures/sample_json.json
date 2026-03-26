@@ -1,0 +1,9 @@
+{
+  "customer_name": "Jane Doe",
+  "email": "jane.doe@company.org",
+  "phone": "+1-555-9876",
+  "address": "456 Oak Avenue, Portland, OR 97201",
+  "support_notes": "Customer Jane Doe called about her order. Her email is jane.doe@company.org and she requested a callback at +1-555-9876.",
+  "internal_id": "CUST-00042",
+  "ip_address": "10.0.0.15"
+}

@@ -1,0 +1,6 @@
+name: default
+description: "Redact all PII by default, pseudonymize person names"
+default_action: redact
+entities:
+  PERSON:
+    action: pseudonymize

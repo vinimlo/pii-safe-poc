@@ -1,31 +1,68 @@
 # pii-safe
 
-**Privacy middleware for AI agent workflows — detects, sanitizes, and scores PII before it reaches an LLM.**
+**Real-time privacy guard for agentic AI workflows — 3-tier cascading PII detection with Bayesian entity resolution.**
 
-![Tests](https://img.shields.io/badge/tests-24%2F24_passing-10b981?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-88%2F88_passing-10b981?style=flat-square)
 ![Python](https://img.shields.io/badge/Python-3.11+-3776ab?style=flat-square)
 ![MCP](https://img.shields.io/badge/MCP-tool_server-8b5cf6?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-444?style=flat-square)
+![Latency](https://img.shields.io/badge/Tier_1-44μs_(272x_faster_than_Presidio)-f59e0b?style=flat-square)
 
 > **Status:** Proof of concept for [GSoC 2026 — C2SI PII-Safe](https://c2si.org/gsoc/)
 
-As AI agents increasingly process security logs, chat transcripts, and incident reports, they are exposed to sensitive personal information. PII-Safe is a middleware that automatically detects and sanitizes PII using configurable policies — available as a Python library, CLI tool, and MCP server for direct integration into agent workflows.
+AI agents in frameworks like LangGraph and CrewAI process sensitive data across dozens of tool calls per second — but no existing middleware can detect and sanitize PII at that speed while maintaining consistent entity identity across conversation turns. PII-Safe fills this gap with a **3-tier cascading privacy guard** designed specifically for real-time agentic workflows.
 
 ---
 
-## Demo
+## Entity Resolution Demo
 
-[![asciicast](https://asciinema.org/a/21UCHhIc9SLyTMaH.svg)](https://asciinema.org/a/21UCHhIc9SLyTMaH)
+[![asciicast](https://asciinema.org/a/wEo2Ds5068kogRrA.svg)](https://asciinema.org/a/wEo2Ds5068kogRrA)
+
+Run the multi-turn demo to see Bayesian entity resolution in action:
+
+```bash
+.venv/bin/python -m src.demo --script demo_script.json --verbose
+```
+
+This simulates a 6-turn agent conversation and shows:
+- **Turn 1:** "Kavishka Fernando" and "kavishka@wso2.com" detected as new entities
+- **Turn 3:** "Kavihska Fernando" (typo) → **MERGE** with [USER_2] (posterior: 83.1%)
+- **Turn 4:** "Fernando" (partial name) → **DEFERRED** to [USER_2] (posterior: 62.7%)
+- **Turn 6:** "Catherine" → **DEFERRED** to "Katherine" (phonetic match, 64.5%)
+
+Each resolution shows the full 5-signal Bayesian breakdown (phonetic, edit distance, trigram, token, co-occurrence).
+
+---
+
+## Benchmarks
+
+```bash
+.venv/bin/python benchmarks/entity_resolution_bench.py   # precision/recall
+.venv/bin/python benchmarks/tier1_latency_bench.py        # latency comparison
+```
+
+| Metric | Value |
+|--------|-------|
+| Tier 1 latency (p50) | 44μs |
+| Tier 1 throughput | 22,600 scans/s |
+| Presidio latency (p50) | 11,829μs |
+| **Speedup** | **272x** |
+| Entity resolution F1 (threshold 0.90) | 0.923 |
+| Typo recall | 100% |
+| Reordering recall | 100% |
+| Phonetic recall | 100% |
 
 ---
 
 ## What This Proves
 
-- **Real PII detection** using presidio + spaCy NER — not regex, not mocks
+- **Tier 1: Pure regex detection** — 44μs mean latency, 272x faster than Presidio, zero external dependencies
+- **Tier 3: Bayesian entity resolution** — Probabilistic Entity Fingerprint (PEF) system resolves typos, reordering, and phonetic variants. F1=0.923 on synthetic benchmark. "Kavihska" correctly merges with "Kavishka Fernando" (83.1% posterior).
+- **Three-outcome model** — MERGE / DEFERRED / NEW_ENTITY. Ambiguous cases are flagged, not silently merged.
+- **Secure session teardown** — Entity fingerprints are zero-filled via `ctypes.memset` before GC. Privacy of the privacy guard.
 - **Policy-driven sanitization** — redact, pseudonymize, or allowlist per entity type
 - **MCP tool interface** — AI agents discover and call PII-Safe via the Model Context Protocol
-- **Three interfaces from one engine** — CLI, MCP server, and Python API
-- **24 passing tests** across detection, sanitization, and engine modules
+- **88 passing tests** across detection, sanitization, engine, Tier 1, and entity resolution modules
 
 ---
 
@@ -106,30 +143,32 @@ An AI agent calling `pii_safe_scan` receives:
 
 ## Architecture
 
-[![Architecture Diagram](architecture.png)](architecture-diagram.html)
-
 ```
-┌──────────────────────────────────────────────────┐
-│                    pii-safe                       │
-│                                                   │
-│  ┌──────────────┐  ┌──────────────────────────┐  │
-│  │  Detector     │  │  Sanitizer               │  │
-│  │  (presidio +  │  │  (redact / pseudonymize  │  │
-│  │   spaCy NER)  │  │   / allowlist)           │  │
-│  └──────┬───────┘  └──────────┬───────────────┘  │
-│         │                     │                   │
-│  ┌──────▼─────────────────────▼───────────────┐  │
-│  │           PII-Safe Engine                   │  │
-│  │  detect() → sanitize() → score()           │  │
-│  └──────────────┬─────────────────────────────┘  │
-│                 │                                  │
-│  ┌──────────────▼─────────────────────────────┐  │
-│  │  Interfaces                                 │  │
-│  │  ├── CLI      (scan, detect, policies)      │  │
-│  │  ├── MCP      (3 tools, stdio transport)    │  │
-│  │  └── Python   (from src.engine import ...)  │  │
-│  └────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     PII-Safe: 3-Tier Cascading Guard                    │
+│                                                                         │
+│  Input ──▶ ┌─────────────────┐                                          │
+│            │ TIER 1: SPEED   │  Compiled regex DFA (44μs, 272x Presidio)│
+│            │ Pattern Guard   │  + Luhn, CPF, IP, email validators       │
+│            └────────┬────────┘                                          │
+│                     │                                                   │
+│                     ▼                                                   │
+│            ┌─────────────────┐                                          │
+│            │ TIER 3: STATE   │  Probabilistic Entity Fingerprint (PEF)  │
+│            │ Entity Resolver │  + Multi-index retrieval (phonetic+LSH)  │
+│            │                 │  + 5-signal Bayesian scorer              │
+│            │                 │  + MERGE / DEFERRED / NEW_ENTITY         │
+│            └────────┬────────┘                                          │
+│                     │                                                   │
+│                     ▼                                                   │
+│            ┌─────────────────┐  ┌──────────────────────────────────┐    │
+│            │ Policy Engine   │─▶│ Sanitize: redact / pseudonymize  │    │
+│            │ (YAML-config)   │  │ Score: 0.0–1.0 privacy risk     │    │
+│            └─────────────────┘  │ Audit: structured log record     │    │
+│                                 └──────────────────────────────────┘    │
+│                                                                         │
+│  Interfaces: Python API │ CLI │ MCP Server │ Interactive Demo           │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Sanitization Policies
@@ -159,15 +198,18 @@ entities:
 ## Running Tests
 
 ```bash
-python -m pytest tests/ -v
+.venv/bin/python -m pytest tests/ -v
 ```
 
 ```
-tests/test_detector.py    8 passed   — email, name, IP, phone detection + edge cases
-tests/test_sanitizer.py   7 passed   — redaction, pseudonymization, allowlisting
-tests/test_engine.py      9 passed   — full pipeline, policy switching, serialization
+tests/test_detector.py           8 passed   — Presidio-based detection (original)
+tests/test_sanitizer.py          7 passed   — redaction, pseudonymization, allowlisting
+tests/test_engine.py             9 passed   — full pipeline, policy switching, serialization
+tests/test_tier1.py             30 passed   — pure regex detection, validators, performance
+tests/test_entity_resolution.py 34 passed   — PEF fingerprints, indexes, Bayesian scorer,
+                                              resolver, session graph, secure teardown
 
-24 passed (4.3s)
+88 passed (5.0s)
 ```
 
 ---
@@ -186,8 +228,15 @@ tests/test_engine.py      9 passed   — full pipeline, policy switching, serial
 
 ## Tech Stack
 
-- **presidio-analyzer** + **presidio-anonymizer** — Microsoft's PII detection library (20+ entity types)
+**Core (no external dependencies for Tier 1 + Tier 3):**
+- Pure Python `re` module — compiled regex DFA for Tier 1
+- Custom implementations — Double Metaphone, MinHash/LSH, Damerau-Levenshtein, Bayesian scorer
+
+**Original pipeline (Tier 2 / sanitization):**
+- **presidio-analyzer** + **presidio-anonymizer** — Batch-oriented detection (being replaced by 3-tier cascade)
 - **spaCy** `en_core_web_sm` — NER model backend
+
+**Infrastructure:**
 - **MCP Python SDK** — Model Context Protocol server implementation
 - **pydantic** — Policy schema validation
-- **pytest** — Test framework
+- **pytest** — 88 tests across all modules
